@@ -1,1 +1,77 @@
 @import "tailwindcss";
+
+/* ─── Anonimy Design Tokens ─────────────────────────────────────────────── */
+:root {
+  /* Background */
+  --color-bg:            #F5F0EB;   /* warm cream — primary background */
+  --color-surface:       #FFFFFF;   /* white — cards, panels */
+  --color-surface-warm:  #FAF7F4;   /* off-white — subtle elevated surfaces */
+
+  /* Text */
+  --color-text-primary:  #1A1A1A;   /* near-black */
+  --color-text-secondary:#6B6359;   /* warm medium gray */
+  --color-text-muted:    #9E9187;   /* light warm gray — timestamps, hints */
+
+  /* Accent */
+  --color-accent:        #C07B5A;   /* muted terracotta — links, CTAs, active */
+  --color-accent-light:  #F2E5DC;   /* pale terracotta — log-out button bg */
+
+  /* Border */
+  --color-border:        #E8E2DB;   /* thin warm border */
+  --color-border-strong: #D0C9C1;   /* slightly more visible border */
+
+  /* Auth panel backgrounds */
+  --color-panel-login:   #C5CCBB;   /* sage green — login left panel */
+  --color-panel-signup:  #EDE5D8;   /* warm sand — signup left panel */
+
+  /* Typography */
+  --font-ui:     'Inter', system-ui, sans-serif;
+  --font-serif:  'Playfair Display', Georgia, serif;
+
+  /* Radii */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-pill: 9999px;
+
+  /* Shadows — subtle, no glow */
+  --shadow-card: 0 1px 3px 0 rgba(0,0,0,0.06), 0 1px 2px -1px rgba(0,0,0,0.04);
+  --shadow-md:   0 4px 12px 0 rgba(0,0,0,0.08);
+}
+
+/* ─── Base Reset & Typography ────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ─── Tailwind theme extension ───────────────────────────────────────────── */
+@theme inline {
+  --color-anon-bg:           var(--color-bg);
+  --color-anon-surface:      var(--color-surface);
+  --color-anon-surface-warm: var(--color-surface-warm);
+  --color-anon-text:         var(--color-text-primary);
+  --color-anon-secondary:    var(--color-text-secondary);
+  --color-anon-muted:        var(--color-text-muted);
+  --color-anon-accent:       var(--color-accent);
+  --color-anon-accent-light: var(--color-accent-light);
+  --color-anon-border:       var(--color-border);
+  --color-anon-panel-login:  var(--color-panel-login);
+  --color-anon-panel-signup: var(--color-panel-signup);
+
+  --font-ui:    var(--font-ui);
+  --font-serif: var(--font-serif);
+}
