@@ -6,6 +6,7 @@ import SignupPage from '@/pages/SignupPage';
 import FeedPage from '@/pages/FeedPage';
 import PostDetailPage from '@/pages/PostDetailPage';
 import ProfilePage from '@/pages/ProfilePage';
+import SettingsPage from '@/pages/SettingsPage';
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
 import { useSession } from '@/lib/auth-client';
 
@@ -64,6 +65,10 @@ function AppRoutes() {
       <Route
         path="/profile"
         element={!session ? <Navigate to="/login" replace /> : <ProfilePage />}
+      />
+      <Route
+        path="/settings"
+        element={!session ? <Navigate to="/login" replace /> : <SettingsPage />}
       />
 
       {/* Fallback */}

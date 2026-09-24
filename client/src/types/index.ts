@@ -30,6 +30,10 @@ export interface Comment {
   /** The contextual alias of the commenter within this post */
   alias: Alias;
   createdAt: string; // ISO 8601
+  /** ID of the parent comment if this is a reply */
+  parentId?: string;
+  /** Alias name of the user being replied to */
+  replyToAlias?: string;
 }
 
 /** Minimal user shape — used only for the private profile page */

@@ -18,56 +18,20 @@ export const mockCurrentUser: CurrentUser = {
   createdAt: '2026-08-01T09:00:00.000Z',
 };
 
-// ─── Mock posts ───────────────────────────────────────────────────────────
+// ─── Curated Nature Aliases Pool ─────────────────────────────────────────
 
-export const mockPosts: Post[] = [
-  {
-    id: 'post-1',
-    content:
-      "I finally told my parents that I don't want to become an engineer. It feels terrifying and liberating at the same time.",
-    alias: { name: 'Silent Fox' },
-    commentCount: 23,
-    createdAt: new Date(Date.now() - 14 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'post-2',
-    content:
-      "What's something you wish you had learned five years earlier? I'll start — how to say no without feeling guilty.",
-    alias: { name: 'Blue Raven' },
-    commentCount: 41,
-    createdAt: new Date(Date.now() - 31 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'post-3',
-    content: "Some days are just harder than others. That's all.",
-    alias: { name: 'Quiet Oak' },
-    commentCount: 17,
-    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'post-4',
-    content:
-      "I've been carrying a secret for three years. Not telling anyone here either — just wanted to acknowledge it existed.",
-    alias: { name: 'Hidden Sun' },
-    commentCount: 8,
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'post-5',
-    content:
-      "Unpopular opinion: we spend too much time optimizing things that don't matter and not enough time on the things we're afraid to face.",
-    alias: { name: 'Pale Wolf' },
-    commentCount: 34,
-    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'post-6',
-    content:
-      "Got the promotion I worked towards for two years. I thought I'd feel happier about it.",
-    alias: { name: 'Amber Crane' },
-    commentCount: 12,
-    createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-  },
+export const ALL_CURATED_ALIASES: string[] = [
+  'Silent Fox',
+  'Blue Raven',
+  'Quiet Oak',
+  'Hidden Sun',
+  'Pale Wolf',
+  'Amber Crane',
+  'Cedar Lynx',
+  'Golden Fern',
+  'Silver Birch',
+  'Morning Mist',
+  'Quiet Brook',
 ];
 
 // ─── Mock comments (keyed by postId) ─────────────────────────────────────
@@ -80,6 +44,15 @@ export const mockComments: Record<string, Comment[]> = {
       content: 'That takes a lot of courage. Proud of you.',
       alias: { name: 'Blue Raven' },
       createdAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'c-1-1-reply-1',
+      postId: 'post-1',
+      content: 'Thank you, needed to hear this today.',
+      alias: { name: 'Silent Fox' },
+      parentId: 'c-1-1',
+      replyToAlias: 'Blue Raven',
+      createdAt: new Date(Date.now() - 11 * 60 * 1000).toISOString(),
     },
     {
       id: 'c-1-2',
@@ -151,6 +124,59 @@ export const mockComments: Record<string, Comment[]> = {
   ],
 };
 
+// ─── Mock posts ───────────────────────────────────────────────────────────
+
+export const mockPosts: Post[] = [
+  {
+    id: 'post-1',
+    content:
+      "I finally told my parents that I don't want to become an engineer. It feels terrifying and liberating at the same time.",
+    alias: { name: 'Silent Fox' },
+    commentCount: 4,
+    createdAt: new Date(Date.now() - 14 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'post-2',
+    content:
+      "What's something you wish you had learned five years earlier? I'll start — how to say no without feeling guilty.",
+    alias: { name: 'Blue Raven' },
+    commentCount: 2,
+    createdAt: new Date(Date.now() - 31 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'post-3',
+    content: "Some days are just harder than others. That's all.",
+    alias: { name: 'Quiet Oak' },
+    commentCount: 1,
+    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'post-4',
+    content:
+      "I've been carrying a secret for three years. Not telling anyone here either — just wanted to acknowledge it existed.",
+    alias: { name: 'Hidden Sun' },
+    commentCount: 0,
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'post-5',
+    content:
+      "Unpopular opinion: we spend too much time optimizing things that don't matter and not enough time on the things we're afraid to face.",
+    alias: { name: 'Pale Wolf' },
+    commentCount: 1,
+    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'post-6',
+    content:
+      "Got the promotion I worked towards for two years. I thought I'd feel happier about it.",
+    alias: { name: 'Amber Crane' },
+    commentCount: 2,
+    createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
 // ─── Landing page preview posts (static subset) ──────────────────────────
 
 export const landingPreviewPosts: Post[] = [mockPosts[0], mockPosts[1]];
+
