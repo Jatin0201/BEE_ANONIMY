@@ -6,6 +6,12 @@ export const createPostSchema = z.object({
     .trim()
     .min(1, "Post content cannot be empty")
     .max(2000, "Post content cannot exceed 2000 characters"),
+  alias: z
+    .string()
+    .trim()
+    .min(2, "Alias must be at least 2 characters")
+    .max(50, "Alias cannot exceed 50 characters")
+    .optional(),
 });
 
 export type CreatePostInput = z.infer<typeof createPostSchema>;

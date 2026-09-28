@@ -56,3 +56,27 @@ export async function requireAuth(
     });
   }
 }
+
+/**
+ * Attaches user session to request if present without failing unauthenticated requests.
+ */
+export async function optionalAuth(
+  req: AuthenticatedRequest,
+  _res: Response,
+  next: NextFunction
+) {
+  try {
+    const sessionData = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+    });
+
+    if (sessionData?.user && sessionData?.session) {
+      req.user = sessionData.user as AuthenticatedUser;
+      req.session = sessionData.session as AuthenticatedSession;
+    }
+  } catch {
+    // Ignore error for optional authentication
+  }
+  next();
+}
+

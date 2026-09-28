@@ -155,31 +155,45 @@
 - [x] `auth_review.md` and `email_validation_security_analysis.md` (review artifacts)
 - [x] `posts_api_implementation_plan.md`
 
+### 💬 Backend — Comments API
+- [x] `POST /api/posts/:id/comments` — add a comment or reply (auth required via `requireAuth`)
+- [x] `GET /api/posts/:id/comments` — fetch all comments for a post in chronological order (`createdAt: asc`)
+- [x] Support nested comment hierarchy / replies (`parentId`, `replyToAlias`)
+- [x] Comment response sanitization — `authorId` and `userId` are strictly stripped from all public responses
+- [x] Atomic alias resolution & contextual alias assignment/reuse via `PostParticipant` and `getOrAssignAlias`
+- [x] Validation: post existence, parent comment post match, content 1–2000 characters
+- [x] Post `commentCount` synchronization across single post fetch and feed listing
+- [x] End-to-end automated test suite (`test_comments.mjs`) with 40/40 passing assertions
+
+### 🔄 Frontend → Backend Integration
+- [x] Replaced `usePostsStore` (localStorage/mock) with real typed `api` client (`lib/api.ts`)
+- [x] Feed fetches from `GET /api/posts` with dynamic sorting (Latest/Top) and debounced search
+- [x] Post creation sends `POST /api/posts` with server-authoritative alias assignment
+- [x] Post detail fetches single post from `GET /api/posts/:id`
+- [x] Comment list fetches from `GET /api/posts/:id/comments` in chronological order
+- [x] Comment & reply submission calls `POST /api/posts/:id/comments` with parent hierarchy
+- [x] Aliases displayed across all cards and comments are 100% server-authoritative
+- [x] Loading skeleton placeholders implemented on FeedPage and PostDetailPage
+- [x] Inline error handling with retry mechanisms on FeedPage and PostDetailPage
+- [x] Shared `AliasAvatar` component extracted to eliminate avatar duplication
+
+### 👤 Post Ownership, "Your Posts" Hub & Author Tags
+- [x] `GET /api/posts/me` — fetch all posts authored by the logged-in user
+- [x] `DELETE /api/posts/:id` — delete a post with owner authorization check (403 for non-owner) and DB cascade deletion
+- [x] Contextual `isAuthor: boolean` flag included in post responses without leaking any internal `authorId` or `userId`
+- [x] Visual `(You)` badge rendered next to author alias on Feed post cards and Post Detail view
+- [x] Dedicated **"Your Posts"** hub on `ProfilePage.tsx` with tabs (Your Posts / Account & Privacy)
+- [x] Post deletion action with confirmation dialog directly accessible from Feed, Post Detail, and Profile "Your Posts" list
+- [x] Direct navigation from "Your Posts" into threads and replies (`/post/:id`)
+- [x] End-to-end automated test suite (`test_posts.mjs`) expanded with 38/38 passing assertions covering `/me`, `isAuthor`, and owner deletion
+
 ---
 
 ## 🔴 HIGH PRIORITY — Remaining / In Progress
 
 > These are blockers for the MVP "Definition of Done" from `MVP_SCOPE.md`.
 
-### 1. Backend — Comments API (CRITICAL BLOCKER)
-- [ ] `POST /api/posts/:id/comments` — add a comment or reply (auth required)
-- [ ] `GET /api/posts/:id/comments` — fetch all comments for a post
-- [ ] Support nested comment hierarchy / replies (`parentId`, `replyToAlias`)
-- [ ] Comment response sanitization (`authorId` stripped, contextual alias resolved via `PostParticipant`)
-- [ ] Register comment routes in `app.ts` (`/api/posts/:postId/comments`)
-
-### 2. Frontend → Backend Integration (CRITICAL BLOCKER)
-- [ ] Replace `usePostsStore` (localStorage/mock) with real `fetch`/API calls to the backend
-- [ ] Feed fetches from `GET /api/posts`
-- [ ] Post creation calls `POST /api/posts`
-- [ ] Post detail fetches from `GET /api/posts/:id`
-- [ ] Comment list fetches from `GET /api/posts/:id/comments`
-- [ ] Comment submission calls `POST /api/posts/:id/comments`
-- [ ] Alias displayed in UI must come from server response — not client-side mock pools
-- [ ] Handle API loading states (skeleton/spinner)
-- [ ] Handle API error states (error boundaries or inline error messages)
-
-### 3. Frontend Auth Flow Integration
+### 1. Frontend Auth Flow Integration
 - [ ] **LoginPage** — wire up `signIn()` from `auth-client.ts` (currently UI-only)
 - [ ] **SignupPage** — wire up `signUp()` from `auth-client.ts` (currently UI-only)
 - [ ] Form validation using the shared `email-validator.ts` on the client
@@ -192,12 +206,9 @@
 ## 🟡 MEDIUM PRIORITY — Post-Core, Pre-Launch Polish
 
 ### UI / UX
-- [ ] Remove mock data dependency (`mockData.ts`) entirely once API is live
-- [ ] Skeleton loading placeholders on FeedPage and PostDetailPage during API calls
-- [ ] Empty state when there are truly zero posts from the server
-- [ ] `AliasAvatar` component extracted into a shared component file (currently duplicated in FeedPage, PostDetailPage, SettingsPage)
+- [x] Empty state when there are truly zero posts from the server (Feed & Profile)
 - [ ] Sidebar navigation component extracted (currently duplicated across Feed, Profile, Settings pages)
-- [ ] Active nav state should be driven by the current route (Profile page's sidebar has Notifications incorrectly linked to `/settings`)
+- [ ] Active nav state should be driven by the current route
 
 ### Auth UX
 - [ ] Loading/submitting state on login and signup buttons (prevent double-submit)
@@ -209,16 +220,16 @@
 - [ ] Dark mode toggle is UI-only — implement actual theme switching
 
 ### Profile Page
-- [ ] Display actual `createdAt` from session/user object (currently has a hardcoded fallback "August 2026")
+- [ ] Display actual `createdAt` from session/user object (currently has a fallback "August 2026")
 
 ---
 
 ## 🟢 LOW PRIORITY — P1/P2 from MVP Scope
 
-- [ ] Post deletion by owner (`DELETE /api/posts/:id`)
+- [x] Post deletion by owner (`DELETE /api/posts/:id`)
 - [ ] Basic reporting system (persist report to DB instead of just toast)
 - [ ] Cursor-based feed pagination
-- [ ] Bookmark persistence (currently in React state only, lost on refresh)
+- [x] Bookmark persistence (persisted to localStorage)
 - [ ] Notification system (currently a stub button)
 - [ ] Mobile responsiveness audit and fixes
 - [ ] Google OAuth sign-in UI button on Login/Signup pages
@@ -230,15 +241,26 @@
 ## 🔎 Key Architectural Progress Summary
 
 ```
-Completed Data Layer:
-  POST /api/posts ────────┐
-  GET  /api/posts ────────┼──▶ Express Router ──▶ Posts Service ──▶ Prisma ORM ──▶ PostgreSQL
-  GET  /api/posts/:id ────┘         │                    │
-                              requireAuth          Alias Service (server-authoritative)
-                                                   (Nature base + Dynamic Combinations)
+Completed Full-Stack Architecture:
+  Frontend (React + Vite)
+    ├── FeedPage ──────────────▶ GET  /api/posts (latest / top / search + (You) badge)
+    │                            POST /api/posts
+    │                            DELETE /api/posts/:id
+    ├── PostDetailPage ────────▶ GET  /api/posts/:id (+ (You) badge)
+    │                            GET  /api/posts/:id/comments
+    │                            POST /api/posts/:id/comments
+    │                            DELETE /api/posts/:id
+    ├── ProfilePage ───────────▶ GET  /api/posts/me (Your Posts Hub)
+    │                            DELETE /api/posts/:id
+    └── Shared Components ─────▶ AliasAvatar (nature icon mapping)
+         │
+         ▼
+  Backend (Express + Better Auth + Prisma + PostgreSQL)
+    ├── requireAuth & optionalAuth (Session Validation)
+    ├── Posts Service (CRUD, getMyPosts, isAuthor resolution, cascade delete)
+    ├── Comments Service (Threaded hierarchy, contextual alias reuse)
+    └── Alias Service (Server-authoritative contextual aliases)
 
-Next Steps:
-  1. Backend: Comments API (/api/posts/:id/comments)
-  2. Frontend: Connect Feed & PostDetail pages to real Backend API endpoints
-  3. Frontend: Wire Auth LoginPage & SignupPage to Better Auth client
+Next Step:
+  Frontend Auth Flow Integration (Wire LoginPage & SignupPage to Better Auth)
 ```

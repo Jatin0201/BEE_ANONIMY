@@ -12,7 +12,7 @@ export interface Alias {
   name: string;
 }
 
-/** A sanitized post as returned by GET /api/posts or GET /api/posts/:id */
+/** A sanitized post as returned by GET /api/posts, GET /api/posts/:id, or GET /api/posts/me */
 export interface Post {
   id: string;
   content: string;
@@ -20,6 +20,8 @@ export interface Post {
   alias: Alias;
   commentCount: number;
   createdAt: string; // ISO 8601
+  /** Whether the authenticated requesting session is the author of this post */
+  isAuthor?: boolean;
 }
 
 /** A sanitized comment as returned by GET /api/posts/:id/comments */

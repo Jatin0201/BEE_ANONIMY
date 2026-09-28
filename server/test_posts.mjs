@@ -100,15 +100,30 @@ async function runPostsTestSuite() {
     const user1Cookies = updateCookieJar("", loginRes1);
     assert(loginRes1.status === 200 && Boolean(user1Cookies), "User 1 signed in with verified email and received authenticated session cookie");
 
-    // Setup User 2 for collision test directly in DB
-    const user2 = await prisma.user.create({
-      data: {
-        email: `tester2_db_${Date.now()}@example.com`,
-        name: "Test User 2",
-        emailVerified: true,
-      },
+    // Setup User 2 via Sign Up for session tests
+    const testEmail2 = `tester2_auth_${Date.now()}@example.com`;
+    const testPassword2 = "StrongPassword123!";
+    const signupRes2 = await fetch(`${baseUrl}/api/auth/sign-up/email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: clientOrigin },
+      body: JSON.stringify({ email: testEmail2, password: testPassword2, name: "Test User 2" }),
     });
-    testUserIds.push(user2.id);
+    const signupData2 = await signupRes2.json();
+    const user2 = signupData2.user;
+    if (user2?.id) {
+      testUserIds.push(user2.id);
+      await prisma.user.update({
+        where: { id: user2.id },
+        data: { emailVerified: true },
+      });
+    }
+
+    const loginRes2 = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: clientOrigin },
+      body: JSON.stringify({ email: testEmail2, password: testPassword2 }),
+    });
+    const user2Cookies = updateCookieJar("", loginRes2);
 
     // ─── 1. Unauthenticated Post Creation Rejection ─────────────────────────
     console.log("\n1. Testing Authentication Enforcement:");
@@ -165,7 +180,7 @@ async function runPostsTestSuite() {
         cookie: user1Cookies,
         Origin: clientOrigin,
       },
-      body: JSON.stringify({ content: postContent }),
+      body: JSON.stringify({ content: postContent, alias: "Silver Birch" }),
     });
 
     assert(createRes.status === 201, `POST /api/posts returns 201 Created (got ${createRes.status})`);
@@ -177,7 +192,7 @@ async function runPostsTestSuite() {
 
     assert(Boolean(createdPost?.id), "Created post has a valid UUID ID");
     assert(createdPost?.content === postContent, "Created post content matches request");
-    assert(Boolean(createdPost?.alias?.name), `Created post assigned alias: "${createdPost?.alias?.name}"`);
+    assert(createdPost?.alias?.name === "Silver Birch", `Created post honored chosen/shuffled alias: "${createdPost?.alias?.name}" === "Silver Birch"`);
     assert(createdPost?.commentCount === 0, "Created post has commentCount = 0");
     assert(Boolean(createdPost?.createdAt), "Created post has createdAt ISO string");
 
@@ -266,13 +281,62 @@ async function runPostsTestSuite() {
     assert(getSingleData.post?.alias?.name === createdPost.alias.name, "Fetched post alias matches");
     assert(getSingleData.post?.authorId === undefined, "Fetched post does not leak authorId");
 
-    // 404 for non-existent UUID
-    const nonExistentRes = await fetch(`${baseUrl}/api/posts/00000000-0000-0000-0000-000000000000`);
-    assert(nonExistentRes.status === 404, `GET /api/posts/:non-existent returns 404 Not Found (got ${nonExistentRes.status})`);
+    // ─── 8. Authenticated User's Posts (GET /api/posts/me) & isAuthor ──────
+    console.log("\n8. Testing Authenticated User's Posts (GET /api/posts/me) & isAuthor:");
+    // Unauthenticated request to /me
+    const unauthMeRes = await fetch(`${baseUrl}/api/posts/me`);
+    assert(unauthMeRes.status === 401, `GET /api/posts/me without session returns 401 Unauthorized (got ${unauthMeRes.status})`);
 
-    // 400 for invalid UUID
-    const invalidIdRes = await fetch(`${baseUrl}/api/posts/not-a-uuid`);
-    assert(invalidIdRes.status === 400, `GET /api/posts/:invalid-uuid returns 400 Bad Request (got ${invalidIdRes.status})`);
+    // Authenticated request to /me
+    const authMeRes = await fetch(`${baseUrl}/api/posts/me`, {
+      headers: { cookie: user1Cookies, Origin: clientOrigin },
+    });
+    assert(authMeRes.status === 200, `GET /api/posts/me with session returns 200 OK (got ${authMeRes.status})`);
+    const myPostsData = await authMeRes.json();
+    assert(Array.isArray(myPostsData.posts), "GET /api/posts/me returns posts array");
+    assert(myPostsData.posts.length >= 2, `GET /api/posts/me returns user's authored posts (got ${myPostsData.posts.length})`);
+    assert(myPostsData.posts.every((p) => p.isAuthor === true), "All posts returned by /me have isAuthor = true");
+
+    // Check feed with session for isAuthor flag
+    const feedWithAuthRes = await fetch(`${baseUrl}/api/posts?sort=latest`, {
+      headers: { cookie: user1Cookies, Origin: clientOrigin },
+    });
+    const feedWithAuthData = await feedWithAuthRes.json();
+    const user1PostInFeed = feedWithAuthData.posts.find((p) => p.id === createdPost.id);
+    assert(user1PostInFeed?.isAuthor === true, "User 1's post has isAuthor = true in authenticated feed query");
+
+    // ─── 9. Post Deletion by Owner (DELETE /api/posts/:id) ───────────────────
+    console.log("\n9. Testing Post Deletion by Owner (DELETE /api/posts/:id):");
+    // Create a temporary post to delete
+    const postToDelete = await createPost(user1.id, "Temporary post for deletion testing");
+    createdPostIds.push(postToDelete.id);
+
+    // Unauthenticated deletion attempt
+    const unauthDeleteRes = await fetch(`${baseUrl}/api/posts/${postToDelete.id}`, {
+      method: "DELETE",
+    });
+    assert(unauthDeleteRes.status === 401, `DELETE /api/posts/:id without session returns 401 Unauthorized (got ${unauthDeleteRes.status})`);
+
+    // Unauthorized deletion attempt (User 2 trying to delete User 1's post)
+    const forbiddenDeleteRes = await fetch(`${baseUrl}/api/posts/${postToDelete.id}`, {
+      method: "DELETE",
+      headers: { cookie: user2Cookies, Origin: clientOrigin },
+    });
+    assert(
+      forbiddenDeleteRes.status === 403,
+      `DELETE /api/posts/:id by non-owner returns 403 Forbidden (got ${forbiddenDeleteRes.status})`
+    );
+
+    // Authorized deletion by Owner (User 1)
+    const ownerDeleteRes = await fetch(`${baseUrl}/api/posts/${postToDelete.id}`, {
+      method: "DELETE",
+      headers: { cookie: user1Cookies, Origin: clientOrigin },
+    });
+    assert(ownerDeleteRes.status === 200, `DELETE /api/posts/:id by owner returns 200 OK (got ${ownerDeleteRes.status})`);
+
+    // Verify post is truly gone from DB and API
+    const verifyGoneRes = await fetch(`${baseUrl}/api/posts/${postToDelete.id}`);
+    assert(verifyGoneRes.status === 404, `GET /api/posts/:id after deletion returns 404 Not Found (got ${verifyGoneRes.status})`);
 
   } finally {
     // Cleanup

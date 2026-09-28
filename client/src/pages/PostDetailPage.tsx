@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useMemo, useRef, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   MoreHorizontal,
@@ -8,147 +8,82 @@ import {
   Flag,
   Check,
   MessageSquare,
-  RotateCw,
   CornerDownRight,
   X,
   ChevronDown,
   ChevronUp,
-} from 'lucide-react';
-import { ALL_CURATED_ALIASES } from '@/data/mockData';
-import { usePostsStore } from '@/lib/posts-store';
-import { formatRelativeTime } from '@/lib/utils';
-import type { Comment } from '@/types';
+  RefreshCw,
+  Sparkles,
+  Trash2,
+  RotateCw,
+} from "lucide-react";
+import { api, ApiError } from "@/lib/api";
+import { formatRelativeTime } from "@/lib/utils";
+import { AliasAvatar } from "@/components/AliasAvatar";
+import type { Post, Comment } from "@/types";
 
-// ─── Custom Alias Avatars ──────────────────────────────────────────────────
+const CURATED_ALIASES = [
+  "Silent Fox",
+  "Blue Raven",
+  "Quiet Oak",
+  "Hidden Sun",
+  "Pale Wolf",
+  "Amber Crane",
+  "Cedar Lynx",
+  "Golden Fern",
+  "Silver Birch",
+  "Morning Mist",
+  "Quiet Brook",
+  "Shadow Moss",
+  "Echo Pine",
+  "Wild Sage",
+  "Frost Wren",
+];
 
-function AliasAvatar({ name, size = 40 }: { name: string; size?: number }) {
-  const normalized = name.toLowerCase();
-
-  const badge = (
-    <div
-      className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border border-white flex items-center justify-center shadow-xs"
-      style={{ backgroundColor: '#D48255' }}
-    >
-      <div className="w-1.5 h-1.5 rounded-full bg-[#FAF7F4]" />
-    </div>
-  );
-
-  if (normalized.includes('fox')) {
-    return (
-      <div className="relative inline-block shrink-0" style={{ width: size, height: size }}>
-        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full rounded-full">
-          <circle cx="20" cy="20" r="20" fill="#F4EFEA" />
-          <path d="M10 13 L15 25 L20 28 L25 25 L30 13 L26 23 L20 29 L14 23 Z" fill="#D97746" />
-          <polygon points="12,15 15,22 17,16" fill="#F8EDE3" />
-          <polygon points="28,15 25,22 23,16" fill="#F8EDE3" />
-          <path d="M15 25 L20 29 L17 29 Z" fill="#FFFFFF" />
-          <path d="M25 25 L20 29 L23 29 Z" fill="#FFFFFF" />
-          <circle cx="16" cy="22" r="1.5" fill="#2E241E" />
-          <circle cx="24" cy="22" r="1.5" fill="#2E241E" />
-          <circle cx="20" cy="27" r="1.2" fill="#2E241E" />
-        </svg>
-        {badge}
-      </div>
-    );
-  }
-
-  if (normalized.includes('raven') || normalized.includes('bird')) {
-    return (
-      <div className="relative inline-block shrink-0" style={{ width: size, height: size }}>
-        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full rounded-full">
-          <circle cx="20" cy="20" r="20" fill="#EAEFF5" />
-          <path
-            d="M13 26 C13 20, 16 16, 21 14 C23 13, 27 12, 30 14 C31 14.5, 33 15, 35 15.5 C33 17, 30 18, 28 18 C28 22, 25 26, 20 28 C17 29, 14 28, 13 26 Z"
-            fill="#1E293B"
-          />
-          <circle cx="25" cy="15.5" r="1" fill="#FFFFFF" />
-          <path d="M18 22 C20 21, 23 21, 25 24" stroke="#334155" strokeWidth="1.2" strokeLinecap="round" />
-        </svg>
-        {badge}
-      </div>
-    );
-  }
-
-  if (normalized.includes('oak') || normalized.includes('tree') || normalized.includes('wood')) {
-    return (
-      <div className="relative inline-block shrink-0" style={{ width: size, height: size }}>
-        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full rounded-full">
-          <circle cx="20" cy="20" r="20" fill="#EDF3ED" />
-          <rect x="18.5" y="24" width="3" height="6" rx="1" fill="#655243" />
-          <path
-            d="M20 10 C23 10, 26 12, 27 14 C29 15, 30 17, 29 20 C30 22, 28 25, 25 25 C24 25, 23 25, 22 24.5 C21 25, 19 25, 18 24.5 C17 25, 16 25, 15 25 C12 25, 10 22, 11 20 C10 17, 11 15, 13 14 C14 12, 17 10, 20 10 Z"
-            fill="#4F6D55"
-          />
-          <circle cx="17" cy="15" r="1.5" fill="#6A8D71" opacity="0.6" />
-          <circle cx="23" cy="16" r="1.8" fill="#6A8D71" opacity="0.6" />
-          <circle cx="20" cy="20" r="1.6" fill="#6A8D71" opacity="0.6" />
-        </svg>
-        {badge}
-      </div>
-    );
-  }
-
-  if (normalized.includes('sun') || normalized.includes('amber') || normalized.includes('crane')) {
-    return (
-      <div className="relative inline-block shrink-0" style={{ width: size, height: size }}>
-        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full rounded-full">
-          <circle cx="20" cy="20" r="20" fill="#FEF6E9" />
-          <circle cx="20" cy="20" r="7" fill="#E69C24" />
-          <line x1="20" y1="9" x2="20" y2="11" stroke="#E69C24" strokeWidth="2" strokeLinecap="round" />
-          <line x1="20" y1="29" x2="20" y2="31" stroke="#E69C24" strokeWidth="2" strokeLinecap="round" />
-          <line x1="9" y1="20" x2="11" y2="20" stroke="#E69C24" strokeWidth="2" strokeLinecap="round" />
-          <line x1="29" y1="20" x2="31" y2="20" stroke="#E69C24" strokeWidth="2" strokeLinecap="round" />
-          <line x1="12" y1="12" x2="14" y2="14" stroke="#E69C24" strokeWidth="1.8" strokeLinecap="round" />
-          <line x1="26" y1="26" x2="28" y2="28" stroke="#E69C24" strokeWidth="1.8" strokeLinecap="round" />
-          <circle cx="18" cy="19" r="1" fill="#875306" />
-          <circle cx="22" cy="19" r="1" fill="#875306" />
-          <path d="M18.5 22 C19.2 23, 20.8 23, 21.5 22" stroke="#875306" strokeWidth="0.8" strokeLinecap="round" />
-        </svg>
-        {badge}
-      </div>
-    );
-  }
-
-  if (normalized.includes('wolf') || normalized.includes('lynx')) {
-    return (
-      <div className="relative inline-block shrink-0" style={{ width: size, height: size }}>
-        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full rounded-full">
-          <circle cx="20" cy="20" r="20" fill="#ECEFF2" />
-          <path d="M12 12 L16 24 L20 28 L24 24 L28 12 L24 21 L20 27 L16 21 Z" fill="#64748B" />
-          <polygon points="14,14 16,20 18,15" fill="#CBD5E1" />
-          <polygon points="26,14 24,20 22,15" fill="#CBD5E1" />
-          <circle cx="17" cy="21" r="1.3" fill="#1E293B" />
-          <circle cx="23" cy="21" r="1.3" fill="#1E293B" />
-          <circle cx="20" cy="26" r="1.1" fill="#1E293B" />
-        </svg>
-        {badge}
-      </div>
-    );
-  }
-
-  if (normalized.includes('fern') || normalized.includes('birch') || normalized.includes('brook') || normalized.includes('mist')) {
-    return (
-      <div className="relative inline-block shrink-0" style={{ width: size, height: size }}>
-        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full rounded-full">
-          <circle cx="20" cy="20" r="20" fill="#EBF4EE" />
-          <path d="M20 30 C20 20, 22 14, 28 10 C24 14, 22 18, 20 30 Z" fill="#3B7A57" />
-          <path d="M20 24 C16 22, 13 18, 12 14 C15 17, 18 20, 20 24 Z" fill="#5B9A77" />
-          <path d="M20 18 C24 16, 27 12, 28 8 C25 11, 22 14, 20 18 Z" fill="#78B993" />
-        </svg>
-        {badge}
-      </div>
-    );
-  }
-
-  // Generic fallback
+// ─── Post Detail Skeleton Loader ───────────────────────────────────────────
+function PostDetailSkeleton() {
   return (
-    <div className="relative inline-block shrink-0" style={{ width: size, height: size }}>
-      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full rounded-full">
-        <circle cx="20" cy="20" r="20" fill="#F1ECE6" />
-        <circle cx="20" cy="20" r="9" fill="#9C897B" />
-        <path d="M16 16 L24 24 M24 16 L16 24" stroke="#FFFFFF" strokeWidth="1.4" strokeLinecap="round" />
-      </svg>
-      {badge}
+    <div className="w-full flex flex-col gap-6 animate-pulse">
+      {/* Back link skeleton */}
+      <div className="w-24 h-4 bg-[#EFEAE4] rounded-md mb-2" />
+
+      {/* Author header skeleton */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-full bg-[#EFEAE4]" />
+          <div className="flex flex-col gap-1.5">
+            <div className="w-28 h-4 bg-[#EFEAE4] rounded-md" />
+            <div className="w-16 h-3 bg-[#F5EFEB] rounded-md" />
+          </div>
+        </div>
+      </div>
+
+      {/* Content skeleton */}
+      <div className="flex flex-col gap-2 my-2">
+        <div className="w-full h-6 bg-[#EFEAE4] rounded-md" />
+        <div className="w-3/4 h-6 bg-[#EFEAE4] rounded-md" />
+      </div>
+
+      <hr className="border-t border-[var(--color-border)] my-2" />
+
+      {/* Comments section skeleton */}
+      <div className="flex flex-col gap-4">
+        <div className="w-24 h-4 bg-[#EFEAE4] rounded-md" />
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-full bg-[#EFEAE4]" />
+          <div className="flex-1 flex flex-col gap-2">
+            <div className="w-24 h-3.5 bg-[#EFEAE4] rounded-md" />
+            <div className="w-4/5 h-4 bg-[#F5EFEB] rounded-md" />
+          </div>
+        </div>
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-full bg-[#EFEAE4]" />
+          <div className="flex-1 flex flex-col gap-2">
+            <div className="w-24 h-3.5 bg-[#EFEAE4] rounded-md" />
+            <div className="w-3/5 h-4 bg-[#F5EFEB] rounded-md" />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -156,19 +91,14 @@ function AliasAvatar({ name, size = 40 }: { name: string; size?: number }) {
 // ─── Post Detail Page Component ────────────────────────────────────────────
 
 export default function PostDetailPage() {
+  const navigate = useNavigate();
   const { postId } = useParams<{ postId: string }>();
-  const activePostId = postId || 'post-1';
-  const { getPostById, getComments, addComment, getUserThreadAlias, isUserPostAuthor } = usePostsStore();
 
-  const post = getPostById(activePostId);
-  const comments = getComments(activePostId);
-
-  // Check if current user is the author of this post
-  const isAuthor = isUserPostAuthor(activePostId);
-
-  // Locked alias is author's alias if author, or user's previously locked thread alias
-  const lockedAlias = isAuthor && post?.alias?.name ? post.alias.name : getUserThreadAlias(activePostId);
-  const isAliasLocked = Boolean(lockedAlias);
+  const [post, setPost] = useState<Post | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Replying state (Instagram-style)
   const [replyingTo, setReplyingTo] = useState<{
@@ -176,7 +106,11 @@ export default function PostDetailPage() {
     aliasName: string;
   } | null>(null);
 
-  const [commentText, setCommentText] = useState('');
+  const [commentText, setCommentText] = useState("");
+  const [userAssignedAlias, setUserAssignedAlias] = useState<string | null>(null);
+  const [commentAliasIndex, setCommentAliasIndex] = useState(() =>
+    Math.floor(Math.random() * CURATED_ALIASES.length)
+  );
   const [likedCommentIds, setLikedCommentIds] = useState<Set<string>>(new Set());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [notificationToast, setNotificationToast] = useState<string | null>(null);
@@ -184,56 +118,74 @@ export default function PostDetailPage() {
 
   const commentInputRef = useRef<HTMLInputElement>(null);
 
-  // 1) Identify all aliases already used in this thread (author + any commenters)
-  const usedAliasesInThread = useMemo(() => {
-    const set = new Set<string>();
-    if (post?.alias?.name) {
-      set.add(post.alias.name);
-    }
-    comments.forEach(c => {
-      if (c.alias?.name) {
-        set.add(c.alias.name);
-      }
-    });
-    return set;
-  }, [post, comments]);
+  const [reloadToken, setReloadToken] = useState(0);
 
-  // 2) Filter available aliases: strictly unused in this thread
-  const availableAliases = useMemo(() => {
-    return ALL_CURATED_ALIASES.filter(alias => !usedAliasesInThread.has(alias));
-  }, [usedAliasesInThread]);
-
-  // 3) Active alias selection state for first-time commenter
-  const [selectedAlias, setSelectedAlias] = useState<string>(() => {
-    if (lockedAlias) return lockedAlias;
-    return availableAliases[0] || ALL_CURATED_ALIASES[0];
-  });
-
-  // Ensure selected alias is valid if available pool shifts or if alias is locked
+  // Fetch post and comments from Backend API
   useEffect(() => {
-    if (lockedAlias) {
-      setSelectedAlias(lockedAlias);
-    } else if (availableAliases.length > 0 && !availableAliases.includes(selectedAlias)) {
-      setSelectedAlias(availableAliases[0]);
-    }
-  }, [availableAliases, lockedAlias]);
+    let isMounted = true;
 
-  const activeCommenterAlias = lockedAlias || selectedAlias;
+    async function loadPost() {
+      if (!postId) {
+        if (isMounted) {
+          setErrorMessage("No post ID specified");
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const [postRes, commentsRes] = await Promise.all([
+          api.getPostById(postId),
+          api.getComments(postId),
+        ]);
+
+        if (isMounted) {
+          setPost(postRes.post);
+          setComments(commentsRes.comments);
+          setErrorMessage(null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.error("[post-detail] Failed to load post:", err);
+          if (err instanceof ApiError && err.status === 404) {
+            setPost(null);
+          } else {
+            setErrorMessage(
+              err instanceof ApiError
+                ? err.message
+                : "Could not load post details. Please check your connection."
+            );
+          }
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadPost();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [postId, reloadToken]);
+
+  const handleRetry = () => {
+    setIsLoading(true);
+    setReloadToken(t => t + 1);
+  };
+
+  // Toast auto-dismiss
+  useEffect(() => {
+    if (notificationToast) {
+      const timer = setTimeout(() => setNotificationToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notificationToast]);
 
   const showToast = (message: string) => {
     setNotificationToast(message);
-    setTimeout(() => {
-      setNotificationToast(prev => (prev === message ? null : prev));
-    }, 3000);
-  };
-
-  const handleRerollCommentAlias = () => {
-    if (isAliasLocked || availableAliases.length === 0) return;
-    const currentIndex = availableAliases.indexOf(selectedAlias);
-    const nextIndex = (currentIndex + 1) % availableAliases.length;
-    const nextAlias = availableAliases[nextIndex];
-    setSelectedAlias(nextAlias);
-    showToast(`Alias changed to ${nextAlias}`);
   };
 
   const handleToggleLike = (commentId: string) => {
@@ -283,41 +235,87 @@ export default function PostDetailPage() {
     });
   };
 
-  const handleAddComment = (e: React.FormEvent) => {
+  // Submit comment or reply to Backend API
+  const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim() || !post) return;
-
     const trimmed = commentText.trim();
+    if (!trimmed || !postId || isSubmitting) return;
 
-    addComment(post.id, {
-      content: trimmed,
-      aliasName: activeCommenterAlias,
-      parentId: replyingTo?.commentId,
-      replyToAlias: replyingTo?.aliasName,
-    });
-
+    setIsSubmitting(true);
     const wasReplying = Boolean(replyingTo);
     const replyTarget = replyingTo?.aliasName;
 
-    setCommentText('');
-    setReplyingTo(null);
+    try {
+      const res = await api.createComment(
+        postId,
+        trimmed,
+        replyingTo?.commentId,
+        activeCommenterAlias
+      );
 
-    if (wasReplying) {
-      showToast(`Reply to @${replyTarget} posted as ${activeCommenterAlias}`);
-    } else {
-      showToast(`Comment posted as ${activeCommenterAlias}`);
+      const newComment = res.comment;
+      setUserAssignedAlias(newComment.alias.name);
+
+      // Append new comment to comments list
+      setComments(prev => [...prev, newComment]);
+
+      // Increment post comment count
+      if (post) {
+        setPost({
+          ...post,
+          commentCount: post.commentCount + 1,
+        });
+      }
+
+      setCommentText("");
+      setReplyingTo(null);
+
+      if (wasReplying) {
+        showToast(`Reply to @${replyTarget} posted as ${newComment.alias.name}`);
+      } else {
+        showToast(`Comment posted as ${newComment.alias.name}`);
+      }
+    } catch (err) {
+      console.error("[post-detail] Error adding comment:", err);
+      showToast(
+        err instanceof ApiError
+          ? err.message
+          : "Failed to submit comment. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href).catch(() => {});
     setIsMenuOpen(false);
-    showToast('Post link copied to clipboard');
+    showToast("Post link copied to clipboard");
   };
 
   const handleReportPost = () => {
     setIsMenuOpen(false);
-    showToast('Post reported to moderation team');
+    showToast("Post reported to moderation team");
+  };
+
+  const handleDeletePost = async () => {
+    if (!post) return;
+    if (!window.confirm("Are you sure you want to delete this post? This thread and all its comments will be permanently deleted.")) {
+      return;
+    }
+    try {
+      await api.deletePost(post.id);
+      setIsMenuOpen(false);
+      showToast("Post deleted successfully");
+      setTimeout(() => {
+        navigate("/feed");
+      }, 400);
+    } catch (err) {
+      console.error("[post-detail] Failed to delete post:", err);
+      showToast(
+        err instanceof ApiError ? err.message : "Failed to delete post. Please try again."
+      );
+    }
   };
 
   // Group comments: top-level vs replies
@@ -338,47 +336,108 @@ export default function PostDetailPage() {
     return map;
   }, [comments]);
 
-  // If post not found
-  if (!post) {
+  // Determine taken aliases in this thread to avoid collisions in shuffle
+  const usedAliasesInPost = useMemo(() => {
+    const set = new Set<string>();
+    if (post?.alias?.name) set.add(post.alias.name);
+    comments.forEach(c => {
+      if (c.alias?.name) set.add(c.alias.name);
+    });
+    return set;
+  }, [post, comments]);
+
+  const availableAliases = useMemo(() => {
+    const filtered = CURATED_ALIASES.filter(a => !usedAliasesInPost.has(a));
+    return filtered.length > 0 ? filtered : CURATED_ALIASES;
+  }, [usedAliasesInPost]);
+
+  // Is user's alias locked in this post (e.g. they authored the post or already commented)
+  const isAliasLocked = Boolean(post?.isAuthor || userAssignedAlias);
+  const lockedAlias = post?.isAuthor ? post.alias.name : userAssignedAlias;
+
+  const activeCommenterAlias = isAliasLocked
+    ? lockedAlias!
+    : availableAliases[commentAliasIndex % availableAliases.length] || "Silent Fox";
+
+  const handleRerollCommentAlias = () => {
+    if (isAliasLocked || availableAliases.length === 0) return;
+    setCommentAliasIndex(prev => prev + 1);
+    const nextAlias =
+      availableAliases[(commentAliasIndex + 1) % availableAliases.length];
+    showToast(`Comment alias changed to ${nextAlias}`);
+  };
+
+  // Loading State
+  if (isLoading) {
+    return (
+      <div
+        className="min-h-screen flex justify-center py-8 px-4 sm:px-6"
+        style={{
+          backgroundColor: "#FAF7F4",
+          fontFamily: "var(--font-ui)",
+          color: "var(--color-text-primary)",
+        }}
+      >
+        <main className="w-full max-w-xl flex flex-col">
+          <PostDetailSkeleton />
+        </main>
+      </div>
+    );
+  }
+
+  // Error / Post Not Found State
+  if (!post || errorMessage) {
     return (
       <div
         className="min-h-screen flex flex-col items-center justify-center p-6 text-center"
         style={{
-          backgroundColor: '#FAF7F4',
-          fontFamily: 'var(--font-ui)',
-          color: 'var(--color-text-primary)',
+          backgroundColor: "#FAF7F4",
+          fontFamily: "var(--font-ui)",
+          color: "var(--color-text-primary)",
         }}
       >
         <div className="w-12 h-12 rounded-full bg-[#EFEAE4] flex items-center justify-center mb-4 text-[var(--color-text-secondary)]">
           <MessageSquare size={22} />
         </div>
-        <h1 className="text-xl font-semibold mb-2" style={{ fontFamily: 'var(--font-serif)' }}>
-          Post not found
+        <h1 className="text-xl font-semibold mb-2" style={{ fontFamily: "var(--font-serif)" }}>
+          {errorMessage || "Post not found"}
         </h1>
         <p className="text-xs text-[var(--color-text-muted)] mb-6 max-w-xs">
-          The post you are looking for may have been removed or does not exist.
+          {errorMessage
+            ? "There was an issue loading this thread from the server."
+            : "The post you are looking for may have been removed or does not exist."}
         </p>
-        <Link
-          to="/feed"
-          className="px-5 py-2.5 rounded-full text-xs font-medium bg-[#1A1A1A] text-white hover:bg-[#2E2E2E] transition-colors"
-          style={{ textDecoration: 'none' }}
-        >
-          Return to feed
-        </Link>
+        <div className="flex items-center gap-3">
+          {errorMessage && (
+            <button
+              onClick={handleRetry}
+              className="px-4 py-2 rounded-full text-xs font-medium bg-[#EFEAE4] text-[var(--color-text-primary)] hover:bg-[#E5DACD] transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw size={12} />
+              <span>Retry</span>
+            </button>
+          )}
+          <Link
+            to="/feed"
+            className="px-5 py-2 rounded-full text-xs font-medium bg-[#1A1A1A] text-white hover:bg-[#2E2E2E] transition-colors"
+            style={{ textDecoration: "none" }}
+          >
+            Return to feed
+          </Link>
+        </div>
       </div>
     );
   }
 
-  // Dynamic comment count (all comments + replies)
   const totalCommentCount = comments.length;
 
   return (
     <div
       className="min-h-screen flex justify-center py-8 px-4 sm:px-6"
       style={{
-        backgroundColor: '#FAF7F4',
-        fontFamily: 'var(--font-ui)',
-        color: 'var(--color-text-primary)',
+        backgroundColor: "#FAF7F4",
+        fontFamily: "var(--font-ui)",
+        color: "var(--color-text-primary)",
       }}
     >
       {/* ── Toast Notification ────────────────────────────────────────── */}
@@ -388,9 +447,9 @@ export default function PostDetailPage() {
           aria-live="polite"
           className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl text-sm shadow-md flex items-center gap-2 border animate-in fade-in slide-in-from-bottom-3 duration-200"
           style={{
-            backgroundColor: '#1A1A1A',
-            color: '#FFFFFF',
-            borderColor: '#333333',
+            backgroundColor: "#1A1A1A",
+            color: "#FFFFFF",
+            borderColor: "#333333",
           }}
         >
           <Check size={16} className="text-[#C07B5A]" />
@@ -406,7 +465,7 @@ export default function PostDetailPage() {
           <Link
             to="/feed"
             className="inline-flex items-center gap-2.5 text-sm font-medium text-[var(--color-text-primary)] hover:text-[#C07B5A] transition-colors group cursor-pointer"
-            style={{ textDecoration: 'none' }}
+            style={{ textDecoration: "none" }}
           >
             <ArrowLeft size={17} className="transition-transform group-hover:-translate-x-0.5" />
             <span>Back to feed</span>
@@ -418,13 +477,18 @@ export default function PostDetailPage() {
           <div className="flex items-center gap-3">
             <AliasAvatar name={post.alias.name} size={42} />
             <div className="flex flex-col leading-tight">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-base font-semibold text-[var(--color-text-primary)]">
                   {post.alias.name}
                 </span>
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#EFEAE4] text-[var(--color-text-secondary)] border border-[var(--color-border)]">
                   Author
                 </span>
+                {post.isAuthor && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-[#EFEAE4] text-[#7A6B5D] border border-[#DCD3C7]">
+                    You
+                  </span>
+                )}
               </div>
               <time className="text-xs text-[var(--color-text-muted)] mt-0.5">
                 {formatRelativeTime(post.createdAt)}
@@ -451,13 +515,23 @@ export default function PostDetailPage() {
                   <Share2 size={14} className="text-[var(--color-text-muted)]" />
                   <span>Copy link</span>
                 </button>
-                <button
-                  onClick={handleReportPost}
-                  className="w-full px-3.5 py-2 text-left text-xs text-[#B94A48] hover:bg-[#FDF2F2] flex items-center gap-2 cursor-pointer transition-colors"
-                >
-                  <Flag size={14} className="text-[#B94A48]" />
-                  <span>Report post</span>
-                </button>
+                {post.isAuthor ? (
+                  <button
+                    onClick={handleDeletePost}
+                    className="w-full px-3.5 py-2 text-left text-xs text-[#B94A48] hover:bg-[#FDF2F2] flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <Trash2 size={14} className="text-[#B94A48]" />
+                    <span>Delete post</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleReportPost}
+                    className="w-full px-3.5 py-2 text-left text-xs text-[#B94A48] hover:bg-[#FDF2F2] flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <Flag size={14} className="text-[#B94A48]" />
+                    <span>Report post</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -467,7 +541,7 @@ export default function PostDetailPage() {
         <div className="my-3">
           <h1
             className="text-2xl md:text-[26px] leading-[1.35] text-[var(--color-text-primary)] font-normal tracking-tight"
-            style={{ fontFamily: 'var(--font-serif)' }}
+            style={{ fontFamily: "var(--font-serif)" }}
           >
             {post.content}
           </h1>
@@ -481,11 +555,12 @@ export default function PostDetailPage() {
           <div className="flex items-center gap-2">
             <MessageSquare size={16} className="text-[var(--color-text-muted)]" />
             <span className="text-sm font-medium text-[var(--color-text-primary)]">
-              {totalCommentCount} {totalCommentCount === 1 ? 'comment' : 'comments'}
+              {totalCommentCount} {totalCommentCount === 1 ? "comment" : "comments"}
             </span>
           </div>
-          <span className="text-xs text-[var(--color-text-muted)]">
-            Contextual Anonymity Active
+          <span className="text-xs text-[var(--color-text-muted)] flex items-center gap-1">
+            <Sparkles size={12} className="text-[#C07B5A]" />
+            <span>Contextual Anonymity Active</span>
           </span>
         </div>
 
@@ -546,7 +621,7 @@ export default function PostDetailPage() {
                       <Heart
                         size={16}
                         strokeWidth={1.6}
-                        className={isLiked ? 'fill-[#C07B5A] text-[#C07B5A]' : 'text-[var(--color-text-muted)] hover:text-[#C07B5A]'}
+                        className={isLiked ? "fill-[#C07B5A] text-[#C07B5A]" : "text-[var(--color-text-muted)] hover:text-[#C07B5A]"}
                       />
                     </button>
                   </div>
@@ -554,7 +629,6 @@ export default function PostDetailPage() {
                   {/* ── Nested Instagram-Style Replies Thread ──────────────── */}
                   {hasReplies && (
                     <div className="ml-5 pl-4 border-l-2 border-[#E7DFD5] mt-3 flex flex-col gap-3">
-                      {/* Optional Expand/Collapse Header */}
                       <button
                         type="button"
                         onClick={() => handleToggleThreadReplies(comment.id)}
@@ -562,7 +636,7 @@ export default function PostDetailPage() {
                       >
                         <div className="w-4 h-[1px] bg-[#C5BAA8]" />
                         <span>
-                          {isThreadExpanded ? 'Hide replies' : `View ${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`}
+                          {isThreadExpanded ? "Hide replies" : `View ${replies.length} ${replies.length === 1 ? "reply" : "replies"}`}
                         </span>
                         {isThreadExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                       </button>
@@ -618,7 +692,7 @@ export default function PostDetailPage() {
                                 <Heart
                                   size={14}
                                   strokeWidth={1.6}
-                                  className={isReplyLiked ? 'fill-[#C07B5A] text-[#C07B5A]' : 'text-[var(--color-text-muted)]'}
+                                  className={isReplyLiked ? "fill-[#C07B5A] text-[#C07B5A]" : "text-[var(--color-text-muted)]"}
                                 />
                               </button>
                             </div>
@@ -632,10 +706,10 @@ export default function PostDetailPage() {
           )}
         </div>
 
-        {/* ── 7) Add Comment & Alias Selection Panel ─────────────────────── */}
+        {/* ── 7) Add Comment Input & Replying Context Panel ───────────────── */}
         <div className="sticky bottom-4 z-20 pt-2 pb-2 bg-[#FAF7F4] flex flex-col gap-2.5">
 
-          {/* ── Alias indicator & shuffle (original clean inline design) ── */}
+          {/* Commenting as / Alias Indicator & Shuffle */}
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
               <span>Commenting as</span>
@@ -658,13 +732,13 @@ export default function PostDetailPage() {
                 </button>
               ) : (
                 <span className="text-[11px] text-[var(--color-text-muted)] italic">
-                  {isAuthor ? '(Post Author)' : '(Locked for this thread)'}
+                  {post?.isAuthor ? "(Author)" : "(locked for this thread)"}
                 </span>
               )}
             </div>
           </div>
 
-          {/* ── GOAL 3: Replying Context Banner ──────────────────────────── */}
+          {/* Replying Context Banner */}
           {replyingTo && (
             <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#F4EDE5] border border-[#E5DACD] animate-in fade-in slide-in-from-bottom-2 duration-150">
               <div className="flex items-center gap-2 text-xs">
@@ -686,18 +760,19 @@ export default function PostDetailPage() {
             </div>
           )}
 
-          {/* ── Comment Input & Submit Button ────────────────────────────── */}
+          {/* Comment Input & Submit Button */}
           <form onSubmit={handleAddComment} className="flex items-center gap-3">
             <div className="relative flex-1">
               <input
                 ref={commentInputRef}
                 type="text"
                 value={commentText}
+                maxLength={2000}
                 onChange={e => setCommentText(e.target.value)}
                 placeholder={
                   replyingTo
                     ? `Reply to @${replyingTo.aliasName}...`
-                    : `Add a comment as ${activeCommenterAlias}...`
+                    : "Add an anonymous comment..."
                 }
                 className="w-full px-4 py-3 rounded-xl text-sm bg-white border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] shadow-xs transition-all focus:outline-none focus:border-[var(--color-border-strong)]"
               />
@@ -705,19 +780,19 @@ export default function PostDetailPage() {
 
             <button
               type="submit"
-              disabled={!commentText.trim()}
+              disabled={!commentText.trim() || isSubmitting}
               className="px-6 py-3 rounded-xl text-sm font-medium text-white transition-all cursor-pointer shadow-xs active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
               style={{
-                backgroundColor: '#D48255',
+                backgroundColor: "#D48255",
               }}
               onMouseEnter={e => {
-                if (commentText.trim()) e.currentTarget.style.backgroundColor = '#BF7147';
+                if (commentText.trim() && !isSubmitting) e.currentTarget.style.backgroundColor = "#BF7147";
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor = '#D48255';
+                if (commentText.trim()) e.currentTarget.style.backgroundColor = "#D48255";
               }}
             >
-              {replyingTo ? 'Reply' : 'Comment'}
+              {isSubmitting ? "Sending..." : replyingTo ? "Reply" : "Comment"}
             </button>
           </form>
         </div>

@@ -118,12 +118,14 @@ export function generateCandidateAlias(usedAliases: Set<string>): string {
 
 /**
  * Gets the existing alias for a user in a post or assigns a new unique contextual alias.
+ * If preferredAlias is provided and not already taken by another participant in this post, it is used.
  * Enforces UNIQUE(postId, userId) and UNIQUE(postId, alias).
  */
 export async function getOrAssignAlias(
   db: DbClient,
   postId: string,
   userId: string,
+  preferredAlias?: string,
   maxRetries = 3
 ): Promise<string> {
   // 1. Check if user already has an alias in this post
@@ -150,7 +152,13 @@ export async function getOrAssignAlias(
       });
       const usedAliases = new Set<string>(participants.map((p: { alias: string }) => p.alias));
 
-      const candidateAlias = generateCandidateAlias(usedAliases);
+      let candidateAlias: string;
+      const sanitizedPreferred = preferredAlias?.trim();
+      if (sanitizedPreferred && !usedAliases.has(sanitizedPreferred)) {
+        candidateAlias = sanitizedPreferred;
+      } else {
+        candidateAlias = generateCandidateAlias(usedAliases);
+      }
 
       const created = await db.postParticipant.create({
         data: {

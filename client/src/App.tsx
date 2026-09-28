@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
@@ -12,16 +11,9 @@ import { useSession } from '@/lib/auth-client';
 
 function AppRoutes() {
   const { data: session, isPending } = useSession();
-  const [hasResolvedInitialAuth, setHasResolvedInitialAuth] = useState(false);
 
-  useEffect(() => {
-    if (!isPending) {
-      setHasResolvedInitialAuth(true);
-    }
-  }, [isPending]);
-
-  // Only display full-page loading placeholder on the very first initial session check
-  if (!hasResolvedInitialAuth && isPending) {
+  // Display full-page loading placeholder during initial session check
+  if (isPending) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
