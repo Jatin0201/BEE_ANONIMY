@@ -158,11 +158,17 @@ function AliasAvatar({ name, size = 40 }: { name: string; size?: number }) {
 export default function PostDetailPage() {
   const { postId } = useParams<{ postId: string }>();
   const activePostId = postId || 'post-1';
-
-  const { getPostById, getComments, addComment, getUserThreadAlias } = usePostsStore();
+  const { getPostById, getComments, addComment, getUserThreadAlias, isUserPostAuthor } = usePostsStore();
 
   const post = getPostById(activePostId);
   const comments = getComments(activePostId);
+
+  // Check if current user is the author of this post
+  const isAuthor = isUserPostAuthor(activePostId);
+
+  // Locked alias is author's alias if author, or user's previously locked thread alias
+  const lockedAlias = isAuthor && post?.alias?.name ? post.alias.name : getUserThreadAlias(activePostId);
+  const isAliasLocked = Boolean(lockedAlias);
 
   // Replying state (Instagram-style)
   const [replyingTo, setReplyingTo] = useState<{
@@ -197,26 +203,22 @@ export default function PostDetailPage() {
     return ALL_CURATED_ALIASES.filter(alias => !usedAliasesInThread.has(alias));
   }, [usedAliasesInThread]);
 
-  // 3) Check if user already locked an alias for this thread
-  const lockedAlias = getUserThreadAlias(activePostId);
-  const isAliasLocked = Boolean(lockedAlias);
-
-  // 4) Active alias selection state for first-time commenter
+  // 3) Active alias selection state for first-time commenter
   const [selectedAlias, setSelectedAlias] = useState<string>(() => {
     if (lockedAlias) return lockedAlias;
     return availableAliases[0] || ALL_CURATED_ALIASES[0];
   });
 
-  // Ensure selected alias is valid if available pool shifts
+  // Ensure selected alias is valid if available pool shifts or if alias is locked
   useEffect(() => {
     if (lockedAlias) {
       setSelectedAlias(lockedAlias);
     } else if (availableAliases.length > 0 && !availableAliases.includes(selectedAlias)) {
       setSelectedAlias(availableAliases[0]);
     }
-  }, [availableAliases, lockedAlias, selectedAlias]);
+  }, [availableAliases, lockedAlias]);
 
-  const activeCommenterAlias = isAliasLocked ? (lockedAlias || selectedAlias) : selectedAlias;
+  const activeCommenterAlias = lockedAlias || selectedAlias;
 
   const showToast = (message: string) => {
     setNotificationToast(message);
@@ -656,7 +658,7 @@ export default function PostDetailPage() {
                 </button>
               ) : (
                 <span className="text-[11px] text-[var(--color-text-muted)] italic">
-                  (Locked for this thread)
+                  {isAuthor ? '(Post Author)' : '(Locked for this thread)'}
                 </span>
               )}
             </div>

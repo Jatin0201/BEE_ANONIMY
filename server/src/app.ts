@@ -6,6 +6,7 @@ import { auth } from "./config/auth.js";
 import { requireAuth } from "./middleware/auth.middleware.js";
 import type { AuthenticatedRequest } from "./middleware/auth.middleware.js";
 import { authRouter } from "./modules/auth.routes.js";
+import { postsRouter } from "./modules/posts/posts.routes.js";
 import { authLimiter } from "./middleware/rate-limiter.js";
 
 export const app = express();
@@ -34,6 +35,9 @@ app.use(express.json());
 // Custom OTP-based password reset routes — mounted at /api/password-reset
 // to avoid conflict with Better Auth's /api/auth/* wildcard handler above.
 app.use("/api/password-reset", authRouter);
+
+// Core domain routes
+app.use("/api/posts", postsRouter);
 
 // Basic health check
 app.get("/api/health", (_req, res) => {

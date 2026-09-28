@@ -6,12 +6,17 @@ const STORAGE_KEYS = {
   POSTS: 'anonimy_posts',
   COMMENTS: 'anonimy_comments',
   THREAD_ALIASES: 'anonimy_user_thread_aliases',
+  MY_POSTS: 'anonimy_my_created_posts',
 };
+
+// Posts from other mock users in prototype seed data
+const OTHER_USERS_MOCK_POST_IDS = new Set(['post-2', 'post-3', 'post-4', 'post-5', 'post-6']);
 
 // In-memory fallback if localStorage isn't available or before initialization
 let memoryPosts: Post[] = [];
 let memoryComments: Record<string, Comment[]> = {};
 let memoryThreadAliases: Record<string, string> = {};
+let memoryMyPostIds: Set<string> = new Set(['post-1']);
 
 // Listeners for store updates
 type Listener = () => void;
@@ -51,6 +56,26 @@ function initStore() {
     if (storedAliases) {
       memoryThreadAliases = JSON.parse(storedAliases);
     }
+
+    const storedMyPosts = localStorage.getItem(STORAGE_KEYS.MY_POSTS);
+    if (storedMyPosts) {
+      memoryMyPostIds = new Set(JSON.parse(storedMyPosts));
+    } else {
+      memoryMyPostIds = new Set(['post-1']);
+    }
+
+    // Auto-detect and register any user-created posts
+    memoryPosts.forEach(p => {
+      if (!OTHER_USERS_MOCK_POST_IDS.has(p.id)) {
+        memoryMyPostIds.add(p.id);
+        if (p.alias?.name) {
+          memoryThreadAliases[p.id] = p.alias.name;
+        }
+      }
+    });
+
+    localStorage.setItem(STORAGE_KEYS.MY_POSTS, JSON.stringify(Array.from(memoryMyPostIds)));
+    localStorage.setItem(STORAGE_KEYS.THREAD_ALIASES, JSON.stringify(memoryThreadAliases));
   } catch {
     memoryPosts = [...initialMockPosts];
     memoryComments = { ...initialMockComments };
@@ -87,6 +112,26 @@ export function getStoredPostById(postId: string): Post | undefined {
 }
 
 /**
+ * Checks if the current user created this post.
+ */
+export function isUserPostAuthor(postId: string): boolean {
+  if (!postId) return false;
+  if (memoryMyPostIds.has(postId)) return true;
+  // If not in other mock posts list, treat as user's post
+  if (!OTHER_USERS_MOCK_POST_IDS.has(postId)) {
+    const post = memoryPosts.find(p => p.id === postId);
+    if (post) {
+      memoryMyPostIds.add(postId);
+      if (post.alias?.name) {
+        memoryThreadAliases[postId] = post.alias.name;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Returns all comments (including replies) for a specific post.
  */
 export function getStoredComments(postId: string): Comment[] {
@@ -108,9 +153,15 @@ export function createStoredPost(content: string, aliasName: string): Post {
   memoryPosts = [newPost, ...memoryPosts];
   memoryComments[newPost.id] = [];
 
+  // Track as user-created post and immediately lock author's alias for this post thread
+  memoryMyPostIds.add(newPost.id);
+  memoryThreadAliases[newPost.id] = aliasName;
+
   try {
     localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(memoryPosts));
     localStorage.setItem(STORAGE_KEYS.COMMENTS, JSON.stringify(memoryComments));
+    localStorage.setItem(STORAGE_KEYS.MY_POSTS, JSON.stringify(Array.from(memoryMyPostIds)));
+    localStorage.setItem(STORAGE_KEYS.THREAD_ALIASES, JSON.stringify(memoryThreadAliases));
   } catch {
     // ignore quota/storage issues
   }
@@ -161,7 +212,17 @@ export function addStoredComment(
  * Gets the locked alias for the user in a post thread.
  */
 export function getUserThreadAlias(postId: string): string | null {
-  return memoryThreadAliases[postId] || null;
+  if (memoryThreadAliases[postId]) {
+    return memoryThreadAliases[postId];
+  }
+  if (isUserPostAuthor(postId)) {
+    const post = memoryPosts.find(p => p.id === postId);
+    if (post?.alias?.name) {
+      memoryThreadAliases[postId] = post.alias.name;
+      return post.alias.name;
+    }
+  }
+  return null;
 }
 
 /**
@@ -198,5 +259,6 @@ export function usePostsStore() {
     addComment: addStoredComment,
     getUserThreadAlias,
     setUserThreadAlias,
+    isUserPostAuthor,
   };
 }

@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -18,8 +17,63 @@ model User {
 
   sessions      Session[]
   accounts      Account[]
+  posts         Post[]
+  participants  PostParticipant[]
+  comments      Comment[]
 
   @@map("user")
+}
+
+model Post {
+  id           String            @id @default(uuid())
+  content      String            @db.Text
+  authorId     String
+  author       User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  participants PostParticipant[]
+  comments     Comment[]
+
+  @@index([createdAt(sort: Desc)])
+  @@index([authorId])
+  @@map("post")
+}
+
+model PostParticipant {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  alias     String
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@unique([postId, alias])
+  @@index([postId, userId])
+  @@index([postId, alias])
+  @@map("post_participant")
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  content   String    @db.Text
+  postId    String
+  authorId  String
+  parentId  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+
+  @@index([postId, createdAt])
+  @@index([authorId])
+  @@map("comment")
 }
 
 model Session {
