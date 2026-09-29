@@ -20,6 +20,10 @@
   --color-border:        #E8E2DB;   /* thin warm border */
   --color-border-strong: #D0C9C1;   /* slightly more visible border */
 
+  /* Nav active & hover */
+  --color-nav-active:    #EFEAE4;
+  --color-nav-hover:     #F2ECE4;
+
   /* Auth panel backgrounds */
   --color-panel-login:   #C5CCBB;   /* sage green — login left panel */
   --color-panel-signup:  #EDE5D8;   /* warm sand — signup left panel */
@@ -39,6 +43,40 @@
   --shadow-md:   0 4px 12px 0 rgba(0,0,0,0.08);
 }
 
+/* ─── Dark Mode Palette (Earthy Slate & Warm Espresso) ───────────────────── */
+[data-theme="dark"],
+.dark {
+  /* Background */
+  --color-bg:            #171614;   /* deep espresso charcoal */
+  --color-surface:       #211F1C;   /* dark warm card surface */
+  --color-surface-warm:  #282521;   /* elevated dark surface */
+
+  /* Text */
+  --color-text-primary:  #F4EFEA;   /* soft off-white */
+  --color-text-secondary:#B0A597;   /* warm light gray */
+  --color-text-muted:    #82786C;   /* muted warm charcoal gray */
+
+  /* Accent */
+  --color-accent:        #D48B6A;   /* warm glowing terracotta */
+  --color-accent-light:  #3D2E26;   /* dark terracotta accent bg */
+
+  /* Border */
+  --color-border:        #332E29;   /* subtle dark border */
+  --color-border-strong: #47413B;   /* strong dark border */
+
+  /* Nav active & hover */
+  --color-nav-active:    #2E2A25;
+  --color-nav-hover:     #282420;
+
+  /* Auth panel backgrounds */
+  --color-panel-login:   #232920;   /* deep sage moss */
+  --color-panel-signup:  #2B2620;   /* deep cedar */
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px 0 rgba(0,0,0,0.3), 0 1px 2px -1px rgba(0,0,0,0.2);
+  --shadow-md:   0 4px 12px 0 rgba(0,0,0,0.4);
+}
+
 /* ─── Base Reset & Typography ────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -47,6 +85,9 @@
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 body {

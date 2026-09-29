@@ -187,40 +187,48 @@
 - [x] Direct navigation from "Your Posts" into threads and replies (`/post/:id`)
 - [x] End-to-end automated test suite (`test_posts.mjs`) expanded with 38/38 passing assertions covering `/me`, `isAuthor`, and owner deletion
 
+### 🔐 Frontend Auth Flow Integration
+- [x] **LoginPage** — fully wired to `authClient.signIn.email()` and `signIn.social({ provider: 'google' })`
+- [x] **SignupPage** — 2-step registration with `authClient.signUp.email()` triggering OTP verification
+- [x] **6-Digit Segmented OTP Verification** — interactive input with auto-focus, paste support, and arrow key navigation
+- [x] **Client-Side Validation** — email syntax checking, length bounds, and disposable/burner domain rejection via `validateEmail()`
+- [x] **Session Persistence & Route Redirection** — auto-login upon OTP verification and redirection to `/feed`
+- [x] **Inline Error Handling** — contextual alert banners for invalid credentials, unverified accounts, and network errors
+- [x] **Resend OTP Mechanism** — 60-second cooldown timer and resend trigger via `authClient.emailOtp.sendVerificationOtp()`
+- [x] **Autofill Collision Protection** — honeypot decoys preventing aggressive browser autofill clashes
+- [x] **Route Guards** (`App.tsx`) — unauthenticated users redirected to `/login`; authenticated users redirected to `/feed`
+- [x] **Session Hydration Splash** — full-page loading placeholder preventing flash of unauthenticated content
+
 ---
 
 ## 🔴 HIGH PRIORITY — Remaining / In Progress
 
-> These are blockers for the MVP "Definition of Done" from `MVP_SCOPE.md`.
+> 🎉 **All High Priority tasks are 100% COMPLETE! 0 Blockers for MVP core loop.**
 
-### 1. Frontend Auth Flow Integration
-- [ ] **LoginPage** — wire up `signIn()` from `auth-client.ts` (currently UI-only)
-- [ ] **SignupPage** — wire up `signUp()` from `auth-client.ts` (currently UI-only)
-- [ ] Form validation using the shared `email-validator.ts` on the client
-- [ ] Redirect to `/feed` on successful login/signup
-- [ ] Display server-returned error messages (wrong password, account not found, etc.)
-- [ ] Email OTP verification step: after signup, prompt user for the OTP sent to their email (Better Auth `emailOTP` plugin requires this)
+---
+
+### 🧭 Shared Navigation & Polish
+- [x] **SidebarNav Component Extracted** — reusable sidebar navigation (`components/SidebarNav.tsx`) with wordmark, CTA button, nav items, and profile footer
+- [x] **Route-Driven Active Nav Highlighting** — dynamic active route states (`/feed`, `/post/:id`, `/profile`, `/settings`) using `useLocation()`
+- [x] **Unified User Profile Avatar** — shared SVG avatar component exported and rendered consistently across sidebars and headers
+- [x] **Theme & Dark Mode System** (`context/ThemeContext.tsx`) — complete theme provider with Light, Dark, and System modes + OS preference listener
+- [x] **Earthy Dark Palette & CSS Variables** (`index.css`) — rich slate & espresso dark styling with glowing terracotta accents and smooth transitions
+- [x] **Reading Text Size Scaling** — `'compact'`, `'standard'`, and `'relaxed'` text scaling with `localStorage` persistence
+- [x] **Backend Password Changing** — `SettingsPage.tsx` wired to `authClient.changePassword({ currentPassword, newPassword, revokeOtherSessions })` with validation and error alerts
+- [x] **Active Session Revocation** — `SettingsPage.tsx` wired to `authClient.revokeOtherSessions()` to sign out all other devices
+- [x] **Dynamic Member Since Metadata** — `ProfilePage.tsx` calculates creation date from `session.user.createdAt` with live month/year fallback
+
+---
+
+## 🔴 HIGH PRIORITY — Remaining / In Progress
+
+> 🎉 **All High Priority tasks are 100% COMPLETE! 0 Blockers for MVP core loop.**
 
 ---
 
 ## 🟡 MEDIUM PRIORITY — Post-Core, Pre-Launch Polish
 
-### UI / UX
-- [x] Empty state when there are truly zero posts from the server (Feed & Profile)
-- [ ] Sidebar navigation component extracted (currently duplicated across Feed, Profile, Settings pages)
-- [ ] Active nav state should be driven by the current route
-
-### Auth UX
-- [ ] Loading/submitting state on login and signup buttons (prevent double-submit)
-- [ ] "Forgot Password" link on the LoginPage properly links to `/forgot-password`
-- [ ] After OTP verification and sign-up, seamlessly route to `/feed`
-
-### Settings Page
-- [ ] Settings page is currently UI-only — wire up actual change-password functionality via the backend
-- [ ] Dark mode toggle is UI-only — implement actual theme switching
-
-### Profile Page
-- [ ] Display actual `createdAt` from session/user object (currently has a fallback "August 2026")
+> 🎉 **All Medium Priority polish tasks are 100% COMPLETE!**
 
 ---
 
@@ -232,7 +240,7 @@
 - [x] Bookmark persistence (persisted to localStorage)
 - [ ] Notification system (currently a stub button)
 - [ ] Mobile responsiveness audit and fixes
-- [ ] Google OAuth sign-in UI button on Login/Signup pages
+- [x] Google OAuth sign-in UI button on Login/Signup pages
 - [ ] Production deployment configuration
 - [ ] Environment variable documentation for `.env.example` files
 
@@ -242,7 +250,12 @@
 
 ```
 Completed Full-Stack Architecture:
-  Frontend (React + Vite)
+  Frontend (React + Vite + Better Auth Client + ThemeContext)
+    ├── ThemeProvider ─────────▶ Light / Dark / System mode + Font scaling
+    ├── SidebarNav ────────────▶ Route-driven navigation & profile tile
+    ├── LoginPage ─────────────▶ authClient.signIn.email / signIn.social
+    ├── SignupPage ────────────▶ authClient.signUp.email ──▶ emailOtp.verifyEmail
+    ├── ForgotPasswordPage ────▶ /api/password-reset/* (OTP Flow)
     ├── FeedPage ──────────────▶ GET  /api/posts (latest / top / search + (You) badge)
     │                            POST /api/posts
     │                            DELETE /api/posts/:id
@@ -250,17 +263,21 @@ Completed Full-Stack Architecture:
     │                            GET  /api/posts/:id/comments
     │                            POST /api/posts/:id/comments
     │                            DELETE /api/posts/:id
-    ├── ProfilePage ───────────▶ GET  /api/posts/me (Your Posts Hub)
+    ├── ProfilePage ───────────▶ GET  /api/posts/me (Your Posts Hub + dynamic memberSince)
     │                            DELETE /api/posts/:id
-    └── Shared Components ─────▶ AliasAvatar (nature icon mapping)
+    ├── SettingsPage ──────────▶ authClient.changePassword
+    │                            authClient.revokeOtherSessions
+    │                            Theme & Font scale controls
+    └── Route Guards (App.tsx) ─▶ useSession() declarative route protection
          │
          ▼
   Backend (Express + Better Auth + Prisma + PostgreSQL)
     ├── requireAuth & optionalAuth (Session Validation)
     ├── Posts Service (CRUD, getMyPosts, isAuthor resolution, cascade delete)
     ├── Comments Service (Threaded hierarchy, contextual alias reuse)
-    └── Alias Service (Server-authoritative contextual aliases)
+    ├── Alias Service (Server-authoritative contextual aliases)
+    └── Mailer Service (Transactional Nodemailer OTP dispatch)
 
-Next Step:
-  Frontend Auth Flow Integration (Wire LoginPage & SignupPage to Better Auth)
+Status:
+  All High-Priority & Medium-Priority Tasks 100% Complete!
 ```

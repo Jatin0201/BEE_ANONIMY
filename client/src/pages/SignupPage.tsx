@@ -163,9 +163,24 @@ function OtpInput({
   };
 
   const handleKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !digits[idx] && idx > 0) {
+    if (e.key === 'Backspace') {
+      if (!digits[idx] && idx > 0) {
+        const newDigits = [...digits];
+        newDigits[idx - 1] = '';
+        onChange(newDigits.join(''));
+        const prevInput = document.getElementById(`signup-otp-${idx - 1}`) as HTMLInputElement | null;
+        prevInput?.focus();
+      } else if (digits[idx]) {
+        const newDigits = [...digits];
+        newDigits[idx] = '';
+        onChange(newDigits.join(''));
+      }
+    } else if (e.key === 'ArrowLeft' && idx > 0) {
       const prevInput = document.getElementById(`signup-otp-${idx - 1}`) as HTMLInputElement | null;
       prevInput?.focus();
+    } else if (e.key === 'ArrowRight' && idx < 5) {
+      const nextInput = document.getElementById(`signup-otp-${idx + 1}`) as HTMLInputElement | null;
+      nextInput?.focus();
     }
   };
 
@@ -388,7 +403,7 @@ export default function SignupPage() {
       if (error) {
         setErrorMessage(error.message || 'Failed to resend code. Please try again.');
       } else {
-        setSuccessMessage('New verification code sent! Check your Mailtrap inbox.');
+        setSuccessMessage('New verification code sent! Check your inbox.');
         setResendCooldown(60);
         setOtp('');
       }

@@ -8,6 +8,7 @@ import ProfilePage from '@/pages/ProfilePage';
 import SettingsPage from '@/pages/SettingsPage';
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
 import { useSession } from '@/lib/auth-client';
+import { ThemeProvider } from '@/context/ThemeContext';
 
 function AppRoutes() {
   const { data: session, isPending } = useSession();
@@ -71,8 +72,10 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }

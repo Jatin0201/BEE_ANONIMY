@@ -1,10 +1,6 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Plus,
-  Bell,
-  User as UserIcon,
-  Settings as SettingsIcon,
   Shield,
   KeyRound,
   Mail,
@@ -21,9 +17,11 @@ import {
   AlertTriangle,
   LogOut,
   ChevronRight,
-  BookOpen
+  BookOpen,
 } from 'lucide-react';
-import { useSession, signOut } from '@/lib/auth-client';
+import { useSession, signOut, authClient } from '@/lib/auth-client';
+import { useTheme } from '@/context/ThemeContext';
+import { SidebarNav } from '@/components/SidebarNav';
 
 // ─── Shared Alias Avatars for Privacy Demo ─────────────────────────────────
 
@@ -92,30 +90,7 @@ function AliasAvatarMini({ name, size = 32 }: { name: string; size?: number }) {
   );
 }
 
-// User Profile Avatar matching design
-function UserProfileAvatar({ size = 36 }: { size?: number }) {
-  return (
-    <div
-      className="relative rounded-full overflow-hidden shrink-0"
-      style={{ width: size, height: size, backgroundColor: '#E4DAC8', border: '1.5px solid #D6C8B2' }}
-    >
-      <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-        <circle cx="18" cy="18" r="14" fill="#C5BAA8" />
-        <path
-          d="M10 16 C8 12, 12 8, 18 8 C24 8, 28 12, 26 16 C28 20, 24 24, 24 28 L12 28 C12 24, 8 20, 10 16 Z"
-          fill="#4A3F35"
-        />
-        <ellipse cx="18" cy="18" rx="6.5" ry="8" fill="#F2E6D5" />
-        <circle cx="14" cy="12" r="2.5" fill="#4A3F35" />
-        <circle cx="18" cy="11" r="2.5" fill="#4A3F35" />
-        <circle cx="22" cy="12" r="2.5" fill="#4A3F35" />
-        <circle cx="16" cy="17" r="1" fill="#4A3F35" />
-        <circle cx="20" cy="17" r="1" fill="#4A3F35" />
-        <path d="M16.5 21 C17.5 22, 18.5 22, 19.5 21" stroke="#4A3F35" strokeWidth="0.8" strokeLinecap="round" />
-      </svg>
-    </div>
-  );
-}
+
 
 // ─── Settings Page Component ───────────────────────────────────────────────
 
@@ -160,9 +135,8 @@ export default function SettingsPage() {
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
-  // Preferences states
-  const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'system'>('light');
-  const [fontSizePref, setFontSizePref] = useState<'compact' | 'standard' | 'relaxed'>('standard');
+  // Theme and Font preferences from ThemeContext
+  const { themeMode, setThemeMode, fontSizePref, setFontSizePref } = useTheme();
 
   const [notifyPostReplies, setNotifyPostReplies] = useState(true);
   const [notifyThreadActivity, setNotifyThreadActivity] = useState(true);
@@ -171,11 +145,10 @@ export default function SettingsPage() {
   // Determine user info
   const sessionUser = session as { user?: { email?: string; name?: string; createdAt?: string } } | null | undefined;
   const userEmail = sessionUser?.user?.email || 'you@example.com';
-  const userHandle = `@${userEmail.split('@')[0] || 'youraccount'}`;
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError('');
 
@@ -193,15 +166,29 @@ export default function SettingsPage() {
     }
 
     setIsSavingPassword(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsSavingPassword(false);
+    try {
+      const { error } = await authClient.changePassword({
+        currentPassword,
+        newPassword,
+        revokeOtherSessions: true,
+      });
+
+      if (error) {
+        setPasswordError(error.message || 'Failed to update password. Please check your current password.');
+        setIsSavingPassword(false);
+        return;
+      }
+
       setIsPasswordModalOpen(false);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       showToast('Password updated successfully!');
-    }, 700);
+    } catch {
+      setPasswordError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsSavingPassword(false);
+    }
   };
 
   const handleEmailSubmit = (e: React.FormEvent) => {
@@ -298,8 +285,17 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSignOutOtherSessions = () => {
-    showToast('Signed out of all other devices and sessions.');
+  const handleSignOutOtherSessions = async () => {
+    try {
+      const { error } = await authClient.revokeOtherSessions({ query: {} });
+      if (error) {
+        showToast(error.message || 'Failed to revoke other sessions.');
+      } else {
+        showToast('Signed out of all other devices and sessions.');
+      }
+    } catch {
+      showToast('Failed to revoke other sessions. Please try again.');
+    }
   };
 
   return (
@@ -332,111 +328,7 @@ export default function SettingsPage() {
       <div className="w-full max-w-6xl flex flex-col md:flex-row px-4 md:px-8 py-6 gap-8 relative">
 
         {/* ── LEFT SIDEBAR ──────────────────────────────────────────────── */}
-        <aside
-          className="w-full md:w-64 shrink-0 flex flex-col justify-between md:sticky md:top-6 md:h-[calc(100vh-3rem)] pb-4 md:pb-6"
-          aria-label="Sidebar navigation"
-        >
-          {/* Top section: Wordmark + Action Button + Navigation Items */}
-          <div className="flex flex-col gap-6">
-            {/* Wordmark */}
-            <Link
-              to="/feed"
-              className="text-base font-semibold tracking-[0.22em] uppercase text-left select-none"
-              style={{
-                color: 'var(--color-text-primary)',
-                textDecoration: 'none',
-                letterSpacing: '0.22em',
-              }}
-            >
-              ANONIMY
-            </Link>
-
-            {/* "+ Write something" CTA Button */}
-            <Link
-              to="/feed"
-              className="w-full py-3 px-5 rounded-full flex items-center justify-center gap-2 text-sm font-medium transition-all duration-150 cursor-pointer shadow-xs active:scale-[0.98]"
-              style={{
-                backgroundColor: '#1A1A1A',
-                color: '#FFFFFF',
-                textDecoration: 'none',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#2E2E2E')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#1A1A1A')}
-              aria-label="Write a new anonymous post"
-            >
-              <Plus size={16} strokeWidth={2.5} />
-              <span>Write something</span>
-            </Link>
-
-            {/* Navigation List */}
-            <nav className="flex flex-col gap-1 mt-1">
-              {/* Feed */}
-              <Link
-                to="/feed"
-                className="flex items-center gap-3.5 px-4 py-2.5 rounded-full text-sm font-normal text-[var(--color-text-secondary)] hover:bg-[#F2ECE4] hover:text-[var(--color-text-primary)] transition-colors text-left"
-                style={{ textDecoration: 'none' }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect width="18" height="7" x="3" y="3" rx="2" />
-                  <rect width="18" height="7" x="3" y="14" rx="2" />
-                </svg>
-                <span>Feed</span>
-              </Link>
-
-              {/* Notifications */}
-              <button
-                onClick={() => showToast('No new notifications')}
-                className="flex items-center gap-3.5 px-4 py-2.5 rounded-full text-sm font-normal text-[var(--color-text-secondary)] hover:bg-[#F2ECE4] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer text-left w-full"
-              >
-                <Bell size={18} strokeWidth={1.8} />
-                <span>Notifications</span>
-              </button>
-
-              {/* Profile */}
-              <Link
-                to="/profile"
-                className="flex items-center gap-3.5 px-4 py-2.5 rounded-full text-sm font-normal text-[var(--color-text-secondary)] hover:bg-[#F2ECE4] hover:text-[var(--color-text-primary)] transition-colors text-left"
-                style={{ textDecoration: 'none' }}
-              >
-                <UserIcon size={18} strokeWidth={1.8} />
-                <span>Profile</span>
-              </Link>
-
-              {/* Settings (Active State) */}
-              <Link
-                to="/settings"
-                className="flex items-center gap-3.5 px-4 py-2.5 rounded-full text-sm font-medium transition-colors"
-                style={{
-                  backgroundColor: '#EFEAE4',
-                  color: 'var(--color-text-primary)',
-                  textDecoration: 'none',
-                }}
-              >
-                <SettingsIcon size={18} strokeWidth={2} />
-                <span>Settings</span>
-              </Link>
-            </nav>
-          </div>
-
-          {/* Bottom Profile Section */}
-          <div className="pt-4 border-t border-[var(--color-border)] mt-6 md:mt-0">
-            <Link
-              to="/profile"
-              className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-[#F2ECE4] transition-colors text-left group"
-              style={{ textDecoration: 'none' }}
-            >
-              <UserProfileAvatar size={36} />
-              <div className="flex flex-col min-w-0">
-                <span className="text-sm font-semibold leading-tight text-[var(--color-text-primary)]">
-                  You
-                </span>
-                <span className="text-xs text-[var(--color-text-muted)] truncate max-w-[140px] leading-tight">
-                  {userHandle}
-                </span>
-              </div>
-            </Link>
-          </div>
-        </aside>
+        <SidebarNav onShowToast={showToast} />
 
         {/* ── RIGHT / MAIN SETTINGS COLUMN ───────────────────────────────── */}
         <main className="flex-1 min-w-0 flex flex-col max-w-2xl pb-16">
