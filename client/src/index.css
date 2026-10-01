@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
+
 /* ─── Anonimy Design Tokens ─────────────────────────────────────────────── */
 :root {
   /* Background */
@@ -21,8 +23,8 @@
   --color-border-strong: #D0C9C1;   /* slightly more visible border */
 
   /* Nav active & hover */
-  --color-nav-active:    #EFEAE4;
-  --color-nav-hover:     #F2ECE4;
+  --color-nav-active:    #EAE2D7;   /* clearly visible warm active pill */
+  --color-nav-hover:     #E5DCD0;   /* clearly visible warm hover pill */
 
   /* Auth panel backgrounds */
   --color-panel-login:   #C5CCBB;   /* sage green — login left panel */
@@ -66,7 +68,7 @@
 
   /* Nav active & hover */
   --color-nav-active:    #2E2A25;
-  --color-nav-hover:     #282420;
+  --color-nav-hover:     #38332C;
 
   /* Auth panel backgrounds */
   --color-panel-login:   #232920;   /* deep sage moss */

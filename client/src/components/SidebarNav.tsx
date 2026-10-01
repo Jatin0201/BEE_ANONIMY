@@ -110,10 +110,10 @@ export function SidebarNav({ onOpenComposer, onShowToast }: SidebarNavProps) {
           {/* Feed */}
           <Link
             to="/feed"
-            className={`flex items-center gap-3.5 px-4 py-2.5 rounded-full text-sm transition-colors text-left ${
+            className={`flex items-center gap-3.5 px-4 py-2.5 rounded-full text-sm transition-all duration-150 text-left cursor-pointer ${
               isFeedActive
-                ? 'font-medium bg-[#EFEAE4] dark:bg-[#2E2A25] text-[var(--color-text-primary)]'
-                : 'font-normal text-[var(--color-text-secondary)] hover:bg-[#F2ECE4] dark:hover:bg-[#282420] hover:text-[var(--color-text-primary)]'
+                ? 'font-medium bg-[var(--color-nav-active)] text-[var(--color-text-primary)]'
+                : 'font-normal text-[var(--color-text-secondary)] hover:bg-[var(--color-nav-hover)] hover:text-[var(--color-text-primary)]'
             }`}
             style={{ textDecoration: 'none' }}
           >
@@ -136,7 +136,7 @@ export function SidebarNav({ onOpenComposer, onShowToast }: SidebarNavProps) {
           {/* Notifications */}
           <button
             onClick={handleNotificationClick}
-            className="flex items-center gap-3.5 px-4 py-2.5 rounded-full text-sm font-normal text-[var(--color-text-secondary)] hover:bg-[#F2ECE4] dark:hover:bg-[#282420] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer text-left w-full"
+            className="flex items-center gap-3.5 px-4 py-2.5 rounded-full text-sm font-normal text-[var(--color-text-secondary)] hover:bg-[var(--color-nav-hover)] hover:text-[var(--color-text-primary)] transition-all duration-150 cursor-pointer text-left w-full"
           >
             <Bell size={18} strokeWidth={1.8} />
             <span>Notifications</span>
@@ -145,10 +145,10 @@ export function SidebarNav({ onOpenComposer, onShowToast }: SidebarNavProps) {
           {/* Profile */}
           <Link
             to="/profile"
-            className={`flex items-center gap-3.5 px-4 py-2.5 rounded-full text-sm transition-colors text-left ${
+            className={`flex items-center gap-3.5 px-4 py-2.5 rounded-full text-sm transition-all duration-150 text-left cursor-pointer ${
               isProfileActive
-                ? 'font-medium bg-[#EFEAE4] dark:bg-[#2E2A25] text-[var(--color-text-primary)]'
-                : 'font-normal text-[var(--color-text-secondary)] hover:bg-[#F2ECE4] dark:hover:bg-[#282420] hover:text-[var(--color-text-primary)]'
+                ? 'font-medium bg-[var(--color-nav-active)] text-[var(--color-text-primary)]'
+                : 'font-normal text-[var(--color-text-secondary)] hover:bg-[var(--color-nav-hover)] hover:text-[var(--color-text-primary)]'
             }`}
             style={{ textDecoration: 'none' }}
           >
@@ -159,10 +159,10 @@ export function SidebarNav({ onOpenComposer, onShowToast }: SidebarNavProps) {
           {/* Settings */}
           <Link
             to="/settings"
-            className={`flex items-center gap-3.5 px-4 py-2.5 rounded-full text-sm transition-colors text-left ${
+            className={`flex items-center gap-3.5 px-4 py-2.5 rounded-full text-sm transition-all duration-150 text-left cursor-pointer ${
               isSettingsActive
-                ? 'font-medium bg-[#EFEAE4] dark:bg-[#2E2A25] text-[var(--color-text-primary)]'
-                : 'font-normal text-[var(--color-text-secondary)] hover:bg-[#F2ECE4] dark:hover:bg-[#282420] hover:text-[var(--color-text-primary)]'
+                ? 'font-medium bg-[var(--color-nav-active)] text-[var(--color-text-primary)]'
+                : 'font-normal text-[var(--color-text-secondary)] hover:bg-[var(--color-nav-hover)] hover:text-[var(--color-text-primary)]'
             }`}
             style={{ textDecoration: 'none' }}
           >
@@ -176,7 +176,7 @@ export function SidebarNav({ onOpenComposer, onShowToast }: SidebarNavProps) {
       <div className="pt-4 border-t border-[var(--color-border)] mt-6 md:mt-0">
         <Link
           to="/profile"
-          className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-[#F2ECE4] dark:hover:bg-[#282420] transition-colors text-left group"
+          className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-[var(--color-nav-hover)] transition-colors text-left group"
           style={{ textDecoration: 'none' }}
         >
           <UserProfileAvatar size={36} />
